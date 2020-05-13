@@ -5,7 +5,7 @@ import Good from './Good';
 
 type AppState = {
   goods: Good[];
-  viewParam: string;
+  isLoaded: boolean;
 };
 
 const getGoods = () => {
@@ -16,47 +16,46 @@ const getGoods = () => {
 class App extends React.Component<{}, AppState> {
   state = {
     goods: [] as Good[],
-    viewParam: 'all',
+    isLoaded: false,
   };
 
-  componentDidMount() {
-    getGoods()
-      .then((data) => {
-        this.setState({
-          goods: data,
-        });
-      });
-  }
-
-  updateGoodsToShow = (status: string) => {
-    this.setState({ viewParam: status });
-  };
-
-  getGoods = (viewParam: string) => {
-    let goodsView = [];
-    const { goods } = this.state;
+  filterGoods = (viewParam: string) => {
+    this.setState({
+      isLoaded: true,
+    });
 
     switch (viewParam) {
       case 'red':
-        goodsView = goods.filter(good => (
-          good.color === 'red'
-        ));
+        getGoods()
+        .then((data) => {
+          this.setState({
+            goods: data.filter((good: Good) => (
+              good.color === 'red'
+            )),
+          });
+        });
         break;
       case 'sort 5':
-        goodsView = goods.sort((goodPrew, goodCurr) => (
-          goodPrew.name.localeCompare(goodCurr.name))).slice(0, 6);
+        getGoods()
+          .then((data) => {
+            this.setState({
+              goods: data.sort((goodPrew: Good, goodCurr: Good) => (
+                goodPrew.name.localeCompare(goodCurr.name))).slice(0, 6),
+            });
+          });
         break;
       default:
-        goodsView = goods;
+        getGoods()
+          .then((data) => {
+            this.setState({
+              goods: data,
+            });
+          });
     }
-
-    return goodsView;
   };
 
   render() {
     const statuses = ['all', 'sort 5', 'red'];
-    const { viewParam } = this.state;
-    const goodsView = this.getGoods(viewParam);
 
     return (
       <>
@@ -65,16 +64,18 @@ class App extends React.Component<{}, AppState> {
           {statuses.map(status => (
             <li className="filters__button">
               <a
-              className="filters__link"
+                className="filters__link"
                 href={`#/${status}`}
-                onClick={() => (this.updateGoodsToShow(status))}
+                onClick={() => (this.filterGoods(status))}
               >
                 {status}
               </a>
             </li>
           ))}
         </ul>
-        <GoodsList goods={goodsView} />
+        {(this.state.isLoaded)
+          ? <GoodsList goods={this.state.goods} />
+          : ''}
       </>
     );
   }
